@@ -6,7 +6,7 @@ Auto-deployment scripts for Zenoss Core 4 alpha/beta on CentOS 6/Red Hat Enterpr
 The script included in this directory will automatically deploy Zenoss Core 4
 for you. It will download Java, MySQL Zenoss Core 4, all RPM dependencies, and
 install everything including the Zenoss Core ZenPacks. To use, perform the
-following steps on a fresh CentOS 6/Red Hat Enterprise Linux 6 installation:
+following steps on a fresh CentOS 6/Red Hat Enterprise Linux 6 installation::
 
  # cd /tmp
  # chmod +x path/to/el6-auto.sh
