@@ -54,7 +54,7 @@ zenpack_rpm_file="zenoss-core-zenpacks-$build.$els.$arch.rpm"
 # Let's grab Zenoss first...
 
 zenoss_gpg_key="http://dev.zenoss.org/yum/RPM-GPG-KEY-zenoss"
-for $url in $zenoss_base_url/$zenoss_rpm_file $zenpacks_base_url/$zenpack_rpm_file; do
+for url in $zenoss_base_url/$zenoss_rpm_file $zenpacks_base_url/$zenpack_rpm_file; do
 	if [ ! -f "${url##*/}" ];then
 		echo "Downloading ${url##*/}..."
 		try wget -N $url
