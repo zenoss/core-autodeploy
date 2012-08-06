@@ -11,4 +11,7 @@ To install, please download the following script instead, and use it to install:
 # chmod +x core-autodeploy-4.2.sh
 # ./core-autodeploy-4.2.sh
 
+NOTE: RHEL/CentOS 5 users: use the --no-check-certificate option with wget if you have
+download problems.
+
 EOF
