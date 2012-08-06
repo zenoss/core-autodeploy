@@ -8,11 +8,28 @@
 #
 ###################################################
 
+umask 022
+
+if [ -L /opt/zenoss ]; then
+	echo "/opt/zenoss appears to be a symlink. Please remove and re-run this script."
+	exit 1
+fi
+
 try() {
 	"$@"
 	if [ $? -ne 0 ]; then
 		echo "Command failure: $@"
 		exit 1
+	fi
+}
+
+disable_repo() {
+	local conf=/etc/yum.repos.d/$1.repo
+	if [ ! -e "$conf" ]; then
+		echo "Yum repo config $conf not found -- exiting."
+		exit 1
+	else
+		sed -i -e 's/^enabled.*/enabled = 0/g' $conf
 	fi
 }
 
@@ -26,6 +43,40 @@ else
 	echo "Unable to determine version. I can't continue"
 	exit 1
 fi
+
+# MySQL's official download RPM has different naming for RHEL 5...
+
+if [ "$elv" = "5" ]; then
+	myels="rhel5"
+else
+	myels="el$elv"
+fi
+
+echo "Ensuring This server is in a clean state before we start"
+mysql_installed=0
+if [ `rpm -qa | egrep -c -i "^mysql-(libs|server)?"` -gt 0 ]; then
+	if [ `rpm -qa | egrep -i "^mysql-(libs|server)?" | grep -c -v 5.5` -gt 0 ]; then
+		echo "It appears you already have an older version of MySQL packages installed"
+		echo "I'm too scared to continue. Please remove the following existing MySQL Packages:"
+		rpm -qa | egrep -i "^mysql-(libs|server)?"
+		exit 1
+	else
+		if [ `rpm -qa | egrep -c -i "^mysql-server"` -gt 0 ];then
+			echo "It appears MySQL 5.5 server is already installed. MySQL Installation  will be skipped"
+			mysql_installed=1
+		else
+			echo "It appears you have some MySQL 5.5 packages, but not MySQL Server. I'll try to install"
+		fi
+	fi
+fi
+
+echo "Ensuring Zenoss RPMs are not already present"
+if [ `rpm -qa | grep -c -i ^zenoss` -gt 0 ]; then
+	echo "I see Zenoss Packages already installed. I can't handle that"
+	exit 1
+fi
+
+
 cd /tmp
 
 #Disable SELinux:
@@ -71,41 +122,15 @@ try rm -f .listing
 try wget --no-remove-listing $mysql_ftp_mirror >/dev/null 2>&1
 if [ -e /tmp/.listing ]; then
 	# note: .listing won't be created if you going thru a proxy server(e.g. squid)
-	mysql_v=`cat .listing | awk '{ print $9 }' | grep MySQL-client | grep $els.x86_64.rpm | sort | tail -n 1`
+	mysql_v=`cat .listing | awk '{ print $9 }' | grep MySQL-client | grep $myels.x86_64.rpm | sort | tail -n 1`
 	# tweaks to isolate MySQL version:
 	mysql_v="${mysql_v##MySQL-client-}"
-	mysql_v="${mysql_v%%.$els.*}"
+	mysql_v="${mysql_v%%.$myels.*}"
 	echo "Auto-detected version $mysql_v"
 fi
 if [ "${mysql_v:0:1}" != "5" ]; then
-	# sanity check
-	echo "Auto-detect failure: $mysql_v - falling back to 5.5.25-1"
-	mysql_v="5.5.25-1"
-fi
-rm -f .listing
-
-echo "Ensuring This server is in a clean state before we start"
-mysql_installed=0
-if [ `rpm -qa | egrep -c -i "^mysql-(libs|server)?"` -gt 0 ]; then
-	if [ `rpm -qa | egrep -i "^mysql-(libs|server)?" | grep -c -v 5.5` -gt 0 ]; then
-		echo "It appears you already have an older version of MySQL packages installed"
-		echo "I'm too scared to continue. Please remove the following existing MySQL Packages:"
-		rpm -qa | egrep -i "^mysql-(libs|server)?"
-		exit 1
-	else
-		if [ `rpm -qa | egrep -c -i "mysql-server"` -gt 0 ];then
-			echo "It appears MySQL 5.5 server is already installed. MySQL Installation  will be skipped"
-			mysql_installed=1
-		else
-			echo "It appears you have some MySQL 5.5 packages, but not MySQL Server. I'll try to install"
-		fi
-	fi
-fi
-
-echo "Ensuring Zenoss RPMs are not already present"
-if [ `rpm -qa | grep -c -i zenoss` -gt 0 ]; then
-	echo "I see Zenoss Packages already installed. I can't handle that"
-	exit 1
+	mysql_v="5.5.27-1"
+	echo "Auto-detect failure: $mysql_v - falling back to $mysql_v"
 fi
 
 jre_file="jre-6u31-linux-x64-rpm.bin"
@@ -115,9 +140,10 @@ mysql_server_rpm="MySQL-server-$mysql_v.linux2.6.x86_64.rpm"
 mysql_shared_rpm="MySQL-shared-$mysql_v.linux2.6.x86_64.rpm"
 epel_rpm_url=http://dl.fedoraproject.org/pub/epel/$elv/$arch
 
-echo "Enabling EPEL Repo"
+echo "Installing EPEL Repo"
 wget -r -l1 --no-parent -A 'epel*.rpm' $epel_rpm_url
 try yum -y --nogpgcheck localinstall */pub/epel/$elv/$arch/epel-*.rpm
+disable_repo epel
 
 echo "Installing Required Packages"
 #try yum -y install \
@@ -129,29 +155,16 @@ echo "Installing Required Packages"
 #net-snmp-utils gmp libgomp libgcj.$arch libxslt dmidecode sysstat
 
 try wget http://www.rabbitmq.com/releases/rabbitmq-server/v2.8.4/rabbitmq-server-2.8.4-1.noarch.rpm
-try yum -y --nogpgcheck localinstall rabbitmq-server-2.8.4-1.noarch.rpm
-
-#Some Package names are depend on el release
-#if [ "$elv" == "5" ]; then
-#	try yum -y install liberation-fonts
-#elif [ "$elv" == "6" ]; then
-#	try yum -y install liberation-fonts-common pkgconfig liberation-mono-fonts liberation-sans-fonts liberation-serif-fonts
-#fi
+try yum --enablerepo=epel -y --nogpgcheck localinstall rabbitmq-server-2.8.4-1.noarch.rpm
 
 echo "Downloading Files"
-if [ `rpm -qa | grep -c -i ^openjdk` -eq 0 ]; then
-	if [ ! -f $jre_file ];then
-		echo "Downloading Oracle JRE"
-		try wget -N -O $jre_file $jre_url
-		try chmod +x $jre_file
-	fi
-	if [ `rpm -qa | grep -c jre` -eq 0 ]; then
-		echo "Installating JRE"
-		try ./$jre_file
-	fi
-else
-	echo "Appears you already have a JRE installed. I'm not going to install another one"
+if [ ! -f $jre_file ];then
+	echo "Downloading Oracle JRE"
+	try wget -N -O $jre_file $jre_url
+	try chmod +x $jre_file
 fi
+echo "Installing JRE"
+try ./$jre_file
 
 echo "Downloading and installing MySQL RPMs"
 if [ $mysql_installed -eq 0 ]; then
@@ -165,31 +178,9 @@ if [ $mysql_installed -eq 0 ]; then
 			echo "Failed to download $file. I can't continue"
 			exit 1
 		fi
-		rpm_entry=`echo $file | sed s/.x86_64.rpm//g | sed s/.i386.rpm//g | sed s/.i586.rpm//g`
-		if [ `rpm -qa | grep -c $rpm_entry` -eq 0 ];then
-			try yum -y --nogpgcheck localinstall $file
-		fi
+		try yum -y --nogpgcheck localinstall $file
 	done
 fi
-
-#echo "Installing Zenoss Dependency Repo"
-#There is no EL6 rpm for this as of now. I'm not even entirelly sure we really need it if we have epel
-#rpm -ivh http://deps.zenoss.com/yum/zenossdeps.el5.noarch.rpm
-
-# Scientific Linux 6 includes AMQP daemon -> qpidd stop it before starting rabbitmq
-if [ -e /etc/init.d/qpidd ]; then
-       try /sbin/service qpidd stop
-       try /sbin/chkconfig qpidd off
-fi
-
-echo "Ensuring net-snmp and memcached are installed"
-try yum -y install memcached net-snmp
- 
-echo "Configuring and Starting some Base Services"
-for service in rabbitmq-server memcached snmpd mysql; do
-	try /sbin/chkconfig $service on
-	try /sbin/service $service start
-done
 
 echo "Installing optimal /etc/my.cnf settings"
 cat >> /etc/my.cnf << EOF
@@ -206,17 +197,28 @@ try /usr/bin/mysqladmin -u root -h localhost password ''
 
 # set up rrdtool, etc.
 
-echo "Setting up rpmforge repo..."
+echo "Enabling rpmforge repo..."
 try wget http://pkgs.repoforge.org/rpmforge-release/rpmforge-release-0.5.2-2.$els.rf.$arch.rpm
-try yum -y localinstall rpmforge-release-0.5.2-2.$els.rf.$arch.rpm
+try yum --nogpgcheck -y localinstall rpmforge-release-0.5.2-2.$els.rf.$arch.rpm
+disable_repo rpmforge
 	
 echo "Installing rrdtool"
 try yum -y --enablerepo='rpmforge*' install rrdtool-1.4.7
 
 echo "Installing Zenoss"
-try yum -y localinstall $zenoss_rpm_file
+try yum -y localinstall --enablerepo=epel $zenoss_rpm_file
 
-try /sbin/service zenoss start
+# Scientific Linux 6 includes AMQP daemon -> qpidd stop it before starting rabbitmq
+if [ -e /etc/init.d/qpidd ]; then
+       try /sbin/service qpidd stop
+       try /sbin/chkconfig qpidd off
+fi
+
+echo "Configuring and Starting some Base Services"
+for service in rabbitmq-server memcached snmpd mysql zenoss; do
+	try /sbin/chkconfig $service on
+	try /sbin/service $service start
+done
 
 echo "Installing Core ZenPacks - this takes several minutes..."
 try yum -y localinstall $zenpack_rpm_file
@@ -225,4 +227,4 @@ echo
 echo "Zenoss auto-install complete!"
 echo
 echo "Visit http://127.0.0.1:8080 in a Web browser to complete setup."
-
+echo
