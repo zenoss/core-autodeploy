@@ -139,7 +139,7 @@ try yum -y --nogpgcheck localinstall rabbitmq-server-2.8.4-1.noarch.rpm
 #fi
 
 echo "Downloading Files"
-if [ `rpm -qa | grep -c -i jre` -eq 0 ]; then
+if [ `rpm -qa | grep -c -i ^openjdk` -eq 0 ]; then
 	if [ ! -f $jre_file ];then
 		echo "Downloading Oracle JRE"
 		try wget -N -O $jre_file $jre_url
