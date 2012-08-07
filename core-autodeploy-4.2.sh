@@ -223,8 +223,33 @@ done
 echo "Installing Core ZenPacks - this takes several minutes..."
 try yum -y localinstall $zenpack_rpm_file
 
-echo
-echo "Zenoss auto-install complete!"
-echo
-echo "Visit http://127.0.0.1:8080 in a Web browser to complete setup."
-echo
+cat << EOF
+Zenoss Core $build install completed successfully!
+
+Please visit http://127.0.0.1:8080 in your favorite Web browser to complete
+setup.
+
+NOTE: You may need to disable or modify this server's firewall to access port
+8080. To disable this system's firewall, type:
+
+# service iptables save
+# service iptables stop
+# chkconfig iptables off
+
+Alternatively, you can modify your firewall to enable incoming connections to
+port 8080. Here is a full list of all the ports Zenoss accepts incoming
+connections from, and their purpose:
+
+	8080 (TCP)                 Web user interface
+	11211 (TCP and UDP)        memcached
+	514 (UDP)                  syslog
+	162 (UDP)                  SNMP traps
+
+
+If you encounter problems with this script, please report them on the
+following wiki page:
+
+http://wiki.zenoss.org/index.php?title=Talk:Install_Zenoss
+
+Thank you for using Zenoss. Happy monitoring!
+EOF
