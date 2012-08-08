@@ -90,6 +90,12 @@ if [ -e /etc/selinux/config ]; then
 	sed -i -e 's/^SELINUX=.*/SELINUX=disabled/g' /etc/selinux/config
 fi
 
+openjdk="$(rpm -qa | grep java*openjdk)"
+if [ -n "$openjdk" ]; then
+	echo "Attempting to remove existing OpenJDK..."
+	try rpm -e $openjdk
+fi
+
 # Defaults for user provided input
 arch="x86_64"
 # ftp mirror for MySQL to use for version auto-detection:
