@@ -33,6 +33,11 @@ disable_repo() {
 	fi
 }
 
+enable_service() {
+	try /sbin/chkconfig $1 on
+	try /sbin/service $1 start
+}
+
 #Now that RHEL6 RPMs are released, lets try to be smart and pick RPMs based on that
 if [ -f /etc/redhat-release ]; then
 	elv=`cat /etc/redhat-release | gawk 'BEGIN {FS="release "} {print $2}' | gawk 'BEGIN {FS="."} {print $1}'`
@@ -151,17 +156,15 @@ wget -r -l1 --no-parent -A 'epel*.rpm' $epel_rpm_url
 try yum -y --nogpgcheck localinstall */pub/epel/$elv/$arch/epel-*.rpm
 disable_repo epel
 
-echo "Installing Required Packages"
-#try yum -y install \
-#libaio tk unixODBC \
-#nagios-plugins nagios-plugins-dig nagios-plugins-dns \
-#nagios-plugins-http nagios-plugins-ircd nagios-plugins-ldap \
-#nagios-plugins-ntp nagios-plugins-ping nagios-plugins-rpc nagios-plugins-tcp \
-#erlang memcached perl-DBI net-snmp \
-#net-snmp-utils gmp libgomp libgcj.$arch libxslt dmidecode sysstat
-
+echo "Installing RabbitMQ"
 try wget http://www.rabbitmq.com/releases/rabbitmq-server/v2.8.4/rabbitmq-server-2.8.4-1.noarch.rpm
 try yum --enablerepo=epel -y --nogpgcheck localinstall rabbitmq-server-2.8.4-1.noarch.rpm
+# Scientific Linux 6 includes AMQP daemon -> qpidd stop it before starting rabbitmq
+if [ -e /etc/init.d/qpidd ]; then
+       try /sbin/service qpidd stop
+       try /sbin/chkconfig qpidd off
+fi
+enable_service rabbitmq-server
 
 echo "Downloading Files"
 if [ ! -f $jre_file ];then
@@ -197,9 +200,9 @@ innodb_additional_mem_pool_size = 20M
 EOF
 
 echo "Configuring MySQL"
-try /sbin/service mysql restart
-try /usr/bin/mysqladmin -u root password ''
-try /usr/bin/mysqladmin -u root -h localhost password ''
+enable_service mysql
+/usr/bin/mysqladmin -u root password ''
+/usr/bin/mysqladmin -u root -h localhost password ''
 
 # set up rrdtool, etc.
 
@@ -213,15 +216,8 @@ try yum -y --enablerepo='rpmforge*' install rrdtool-1.4.7
 
 echo "Installing Zenoss"
 try yum -y localinstall --enablerepo=epel $zenoss_rpm_file
-
-# Scientific Linux 6 includes AMQP daemon -> qpidd stop it before starting rabbitmq
-if [ -e /etc/init.d/qpidd ]; then
-       try /sbin/service qpidd stop
-       try /sbin/chkconfig qpidd off
-fi
-
 echo "Configuring and Starting some Base Services"
-for service in rabbitmq-server memcached snmpd mysql zenoss; do
+for service in memcached snmpd zenoss; do
 	try /sbin/chkconfig $service on
 	try /sbin/service $service start
 done
