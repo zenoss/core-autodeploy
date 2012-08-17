@@ -15,6 +15,19 @@ if [ -L /opt/zenoss ]; then
 	exit 1
 fi
 
+if [ `rpm -qa | egrep -c -i "^mysql-"` -gt 0 ]; then
+cat << EOF
+
+It appears that the distro-supplied version of MySQL is at least partially installed.
+Please remove these packages, as well as their dependencies (often postfix), and then
+retry this script:
+
+$(rpm -qa | egrep -i "^mysql-")
+
+EOF
+exit 1
+fi
+
 try() {
 	"$@"
 	if [ $? -ne 0 ]; then
@@ -57,23 +70,6 @@ else
 	myels="el$elv"
 fi
 
-echo "Ensuring This server is in a clean state before we start"
-mysql_installed=0
-if [ `rpm -qa | egrep -c -i "^mysql-(libs|server)?"` -gt 0 ]; then
-	if [ `rpm -qa | egrep -i "^mysql-(libs|server)?" | grep -c -v 5.5` -gt 0 ]; then
-		echo "It appears you already have an older version of MySQL packages installed"
-		echo "I'm too scared to continue. Please remove the following existing MySQL Packages:"
-		rpm -qa | egrep -i "^mysql-(libs|server)?"
-		exit 1
-	else
-		if [ `rpm -qa | egrep -c -i "^mysql-server"` -gt 0 ];then
-			echo "It appears MySQL 5.5 server is already installed. MySQL Installation  will be skipped"
-			mysql_installed=1
-		else
-			echo "It appears you have some MySQL 5.5 packages, but not MySQL Server. I'll try to install"
-		fi
-	fi
-fi
 
 echo "Ensuring Zenoss RPMs are not already present"
 if [ `rpm -qa | grep -c -i ^zenoss` -gt 0 ]; then
@@ -176,20 +172,18 @@ echo "Installing JRE"
 try ./$jre_file
 
 echo "Downloading and installing MySQL RPMs"
-if [ $mysql_installed -eq 0 ]; then
-	#Only install if MySQL Is not already installed
-	for file in $mysql_client_rpm $mysql_server_rpm $mysql_shared_rpm;
-	do
-		if [ ! -f $file ];then
-			try wget -N http://cdn.mysql.com/Downloads/MySQL-5.5/$file
-		fi
-		if [ ! -f $file ];then
-			echo "Failed to download $file. I can't continue"
-			exit 1
-		fi
-		try yum -y --nogpgcheck localinstall $file
-	done
-fi
+#Only install if MySQL Is not already installed
+for file in $mysql_client_rpm $mysql_server_rpm $mysql_shared_rpm;
+do
+	if [ ! -f $file ];then
+		try wget -N http://cdn.mysql.com/Downloads/MySQL-5.5/$file
+	fi
+	if [ ! -f $file ];then
+		echo "Failed to download $file. I can't continue"
+		exit 1
+	fi
+	try yum -y --nogpgcheck localinstall $file
+done
 
 echo "Installing optimal /etc/my.cnf settings"
 cat >> /etc/my.cnf << EOF
