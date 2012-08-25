@@ -82,7 +82,7 @@ if [ `rpm -qa | grep -c -i ^zenoss` -gt 0 ]; then
 	exit 1
 fi
 
-MYTMP="$(PATH=/sbin:/usr/sbin:/bin:/usr/bin mktemp)"
+MYTMP="$(PATH=/sbin:/usr/sbin:/bin:/usr/bin mktemp -d)"
 cd $MYTMP || die "Couldn't change to temporary directory"
 #Disable SELinux:
 
