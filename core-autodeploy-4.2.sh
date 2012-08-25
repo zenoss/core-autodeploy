@@ -36,6 +36,11 @@ try() {
 	fi
 }
 
+die() {
+	echo $*
+	exit 1
+}
+
 disable_repo() {
 	local conf=/etc/yum.repos.d/$1.repo
 	if [ ! -e "$conf" ]; then
@@ -77,9 +82,8 @@ if [ `rpm -qa | grep -c -i ^zenoss` -gt 0 ]; then
 	exit 1
 fi
 
-
-cd /tmp
-
+MYTMP="$(PATH=/sbin:/usr/sbin:/bin:/usr/bin mktemp)"
+cd $MYTMP || die "Couldn't change to temporary directory"
 #Disable SELinux:
 
 echo "Disabling SELinux..."
@@ -127,7 +131,7 @@ fi
 echo "Auto-detecting most recent MySQL Community release"
 try rm -f .listing
 try wget --no-remove-listing $mysql_ftp_mirror >/dev/null 2>&1
-if [ -e /tmp/.listing ]; then
+if [ -e .listing ]; then
 	# note: .listing won't be created if you going thru a proxy server(e.g. squid)
 	mysql_v=`cat .listing | awk '{ print $9 }' | grep MySQL-client | grep $myels.x86_64.rpm | sort | tail -n 1`
 	# tweaks to isolate MySQL version:
