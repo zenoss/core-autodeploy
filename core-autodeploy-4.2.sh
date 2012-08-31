@@ -9,6 +9,8 @@
 ###################################################
 
 umask 022
+# this may or may not be helpful for an install issue some people are having, but shouldn't hurt:
+unalias -a
 
 if [ -L /opt/zenoss ]; then
 	echo "/opt/zenoss appears to be a symlink. Please remove and re-run this script."
