@@ -126,7 +126,10 @@ zenpack_rpm_file="zenoss-core-zenpacks-$build.$els.$arch.rpm"
 
 zenoss_gpg_key="http://dev.zenoss.org/yum/RPM-GPG-KEY-zenoss"
 for url in $zenoss_base_url/$zenoss_rpm_file $zenpack_base_url/$zenpack_rpm_file; do
-	if [ ! -f "${url##*/}" ];then
+	# This will skip download if RPM exists in temp dir, or if user has pre-downloaded the RPM
+	# and placed it in the same directory as the core-autodeploy script. The RPM install parts
+	# have also been modified to use the pre-downloaded version if available.
+	if [ ! -f "${url##*/}" ] && [ ! -f "$SCRIPTPATH/${url##*/}" ];then
 		echo "Downloading ${url##*/}..."
 		try wget -N $url
 	fi
@@ -221,7 +224,12 @@ echo "Installing rrdtool"
 try yum -y --enablerepo='rpmforge*' install rrdtool-1.4.7
 
 echo "Installing Zenoss"
-try yum -y localinstall --enablerepo=epel $zenoss_rpm_file
+if [ -e $zenoss_rpm_file ]; then
+	try yum -y localinstall --enablerepo=epel $zenoss_rpm_file
+else
+	# If already downloaded by user and manually placed next to core-autodeploy.sh, use that RPM instead.
+	try yum -y localinstall --enablerepo=epel $SCRIPTPATH/$zenoss_rpm_file
+fi
 
 try cp $SCRIPTPATH/secure_zenoss.sh /opt/zenoss/bin/ 
 try chown zenoss:zenoss /opt/zenoss/bin/secure_zenoss.sh
@@ -237,7 +245,12 @@ for service in memcached snmpd zenoss; do
 done
 
 echo "Installing Core ZenPacks - this takes several minutes..."
-try yum -y localinstall $zenpack_rpm_file
+if [ -e $zenpack_rpm_file ]; then
+	try yum -y localinstall $zenpack_rpm_file
+else
+	# If already downloaded by user and manually placed next to core-autodeploy.sh, use that RPM instead.
+	try yum -y localinstall $SCRIPTPATH/$zenpack_rpm_file
+fi
 
 cat << EOF
 Zenoss Core $build install completed successfully!
