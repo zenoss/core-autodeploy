@@ -117,6 +117,7 @@ mysql_ftp_mirror="ftp://mirror.anl.gov/pub/mysql/Downloads/MySQL-5.5/"
 # Auto-detect latest build:
 #build=4.2.3
 build=4.2.3-1695
+rmqv=2.8.7
 zenoss_base_url="http://downloads.sourceforge.net/project/zenoss/zenoss-4.2/zenoss-$build"
 zenpack_base_url="http://downloads.sourceforge.net/project/zenoss/zenpacks-4.2/zenpacks-$build"
 zenoss_rpm_file="zenoss-$build.$els.$arch.rpm"
@@ -168,8 +169,8 @@ try yum -y --nogpgcheck localinstall */pub/epel/$elv/$arch/epel-*.rpm
 disable_repo epel
 
 echo "Installing RabbitMQ"
-try wget http://www.rabbitmq.com/releases/rabbitmq-server/v2.8.4/rabbitmq-server-2.8.4-1.noarch.rpm
-try yum --enablerepo=epel -y --nogpgcheck localinstall rabbitmq-server-2.8.4-1.noarch.rpm
+try wget http://www.rabbitmq.com/releases/rabbitmq-server/v${rmqv}/rabbitmq-server-${rmqv}-1.noarch.rpm
+try yum --enablerepo=epel -y --nogpgcheck localinstall rabbitmq-server-${rmqv}.noarch.rpm
 # Scientific Linux 6 includes AMQP daemon -> qpidd stop it before starting rabbitmq
 if [ -e /etc/init.d/qpidd ]; then
        try /sbin/service qpidd stop
