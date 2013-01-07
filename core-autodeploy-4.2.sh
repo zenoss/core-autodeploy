@@ -8,6 +8,10 @@
 #
 ###################################################
 
+pushd `dirname $0` > /dev/null
+SCRIPTPATH=`pwd`
+popd > /dev/null
+
 umask 022
 # this may or may not be helpful for an install issue some people are having, but shouldn't hurt:
 unalias -a
@@ -20,7 +24,9 @@ fi
 if [ `rpm -qa | egrep -c -i "^mysql-"` -gt 0 ]; then
 cat << EOF
 
-It appears that the distro-supplied version of MySQL is at least partially installed.
+It appears that the distro-supplied version of MySQL is at least partially installed,
+or a prior installation attempt failed.
+
 Please remove these packages, as well as their dependencies (often postfix), and then
 retry this script:
 
@@ -109,7 +115,8 @@ arch="x86_64"
 mysql_ftp_mirror="ftp://mirror.anl.gov/pub/mysql/Downloads/MySQL-5.5/"
 
 # Auto-detect latest build:
-build=4.2.0
+#build=4.2.3
+build=4.2.3-1695
 zenoss_base_url="http://downloads.sourceforge.net/project/zenoss/zenoss-4.2/zenoss-$build"
 zenpack_base_url="http://downloads.sourceforge.net/project/zenoss/zenpacks-4.2/zenpacks-$build"
 zenoss_rpm_file="zenoss-$build.$els.$arch.rpm"
@@ -215,6 +222,14 @@ try yum -y --enablerepo='rpmforge*' install rrdtool-1.4.7
 
 echo "Installing Zenoss"
 try yum -y localinstall --enablerepo=epel $zenoss_rpm_file
+
+try cp $SCRIPTPATH/secure_zenoss.sh /opt/zenoss/bin/ 
+try chown zenoss:zenoss /opt/zenoss/bin/secure_zenoss.sh
+try chmod 0700 /opt/zenoss/bin/secure_zenoss.sh
+
+echo "Securing Zenoss"
+try su -l -c /opt/zenoss/bin/secure_zenoss.sh zenoss
+
 echo "Configuring and Starting some Base Services"
 for service in memcached snmpd zenoss; do
 	try /sbin/chkconfig $service on

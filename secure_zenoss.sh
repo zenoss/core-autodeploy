@@ -18,6 +18,10 @@
 
 cat << END_OF_CHANGELOG > /dev/null
 
+2013-01-06  Daniel Robbins <drobbins@zenoss.com>
+
+    * Make etc/ perm fix always enabled (wouldn't enable properly on some builds)
+
 2013-01-04  Chet Luther  <cluther@zenoss.com>
 
     * Initial revision
@@ -45,12 +49,8 @@ fi
 
 ### ZEN-4837: Set 0600 permission on all configuration files (ZEN-4836) #######
 
-if [ ! -z "$(find $ZENHOME/etc -name \*.conf\* -perm 0644)" ]
-then
-    echo "Restricting permissions on $ZENHOME/etc/*.conf*"
-    chmod 0600 $ZENHOME/etc/*.conf*
-fi
-
+echo "Restricting permissions on $ZENHOME/etc/*.conf*"
+chmod 0600 $ZENHOME/etc/*.conf*
 
 ### ZEN-4837: Use a randomized secure password everywhere #####################
 
