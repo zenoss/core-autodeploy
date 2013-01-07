@@ -170,7 +170,7 @@ disable_repo epel
 
 echo "Installing RabbitMQ"
 try wget http://www.rabbitmq.com/releases/rabbitmq-server/v${rmqv}/rabbitmq-server-${rmqv}-1.noarch.rpm
-try yum --enablerepo=epel -y --nogpgcheck localinstall rabbitmq-server-${rmqv}.noarch.rpm
+try yum --enablerepo=epel -y --nogpgcheck localinstall rabbitmq-server-${rmqv}-1.noarch.rpm
 # Scientific Linux 6 includes AMQP daemon -> qpidd stop it before starting rabbitmq
 if [ -e /etc/init.d/qpidd ]; then
        try /sbin/service qpidd stop
