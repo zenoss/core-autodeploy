@@ -237,7 +237,9 @@ try chmod 0700 /opt/zenoss/bin/secure_zenoss.sh
 echo "Securing Zenoss"
 try su -l -c /opt/zenoss/bin/secure_zenoss.sh zenoss
 
-echo "Configuring and Starting some Base Services"
+try cp $SCRIPTPATH/zenpack_actions.txt /opt/zenoss/var
+
+echo "Configuring and Starting some Base Services and Zenoss..."
 for service in memcached snmpd zenoss; do
 	try /sbin/chkconfig $service on
 	try /sbin/service $service start
