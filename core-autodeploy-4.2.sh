@@ -245,6 +245,9 @@ for service in memcached snmpd zenoss; do
 	try /sbin/service $service start
 done
 
+echo "Securing configuration files..."
+try chmod -R go-rwx /opt/zenoss/etc
+
 cat << EOF
 Zenoss Core $build install completed successfully!
 
