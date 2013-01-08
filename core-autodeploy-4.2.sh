@@ -119,14 +119,12 @@ mysql_ftp_mirror="ftp://mirror.anl.gov/pub/mysql/Downloads/MySQL-5.5/"
 build=4.2.3-1695
 rmqv=2.8.7
 zenoss_base_url="http://downloads.sourceforge.net/project/zenoss/zenoss-4.2/zenoss-$build"
-zenpack_base_url="http://downloads.sourceforge.net/project/zenoss/zenpacks-4.2/zenpacks-$build"
-zenoss_rpm_file="zenoss-$build.$els.$arch.rpm"
-zenpack_rpm_file="zenoss-core-zenpacks-$build.$els.$arch.rpm"
+zenoss_rpm_file="zenoss_core-$build.$els.$arch.rpm"
 
 # Let's grab Zenoss first...
 
 zenoss_gpg_key="http://dev.zenoss.org/yum/RPM-GPG-KEY-zenoss"
-for url in $zenoss_base_url/$zenoss_rpm_file $zenpack_base_url/$zenpack_rpm_file; do
+for url in $zenoss_base_url/$zenoss_rpm_file; do
 	# This will skip download if RPM exists in temp dir, or if user has pre-downloaded the RPM
 	# and placed it in the same directory as the core-autodeploy script. The RPM install parts
 	# have also been modified to use the pre-downloaded version if available.
@@ -244,14 +242,6 @@ for service in memcached snmpd zenoss; do
 	try /sbin/chkconfig $service on
 	try /sbin/service $service start
 done
-
-echo "Installing Core ZenPacks - this takes several minutes..."
-if [ -e $zenpack_rpm_file ]; then
-	try yum -y localinstall $zenpack_rpm_file
-else
-	# If already downloaded by user and manually placed next to core-autodeploy.sh, use that RPM instead.
-	try yum -y localinstall $SCRIPTPATH/$zenpack_rpm_file
-fi
 
 cat << EOF
 Zenoss Core $build install completed successfully!
