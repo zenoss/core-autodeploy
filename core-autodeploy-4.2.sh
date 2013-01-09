@@ -116,9 +116,9 @@ mysql_ftp_mirror="ftp://mirror.anl.gov/pub/mysql/Downloads/MySQL-5.5/"
 
 # Auto-detect latest build:
 #build=4.2.3
-build=4.2.3-1695
+build=4.2.3
 rmqv=2.8.7
-zenoss_base_url="http://downloads.sourceforge.net/project/zenoss/zenoss-4.2/zenoss-$build"
+zenoss_base_url="http://downloads.sourceforge.net/project/zenoss/zenoss-4.2/zenoss-4.2.3/zenoss-$build"
 zenoss_rpm_file="zenoss_core-$build.$els.$arch.rpm"
 
 # Let's grab Zenoss first...
