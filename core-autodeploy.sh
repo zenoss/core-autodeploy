@@ -116,17 +116,15 @@ mysql_ftp_mirror="ftp://mirror.anl.gov/pub/mysql/Downloads/MySQL-5.5/"
 
 # Auto-detect latest build:
 #build=4.2.3
-build=4.2.3-1695
+build=4.2.3
 rmqv=2.8.7
 zenoss_base_url="http://downloads.sourceforge.net/project/zenoss/zenoss-4.2/zenoss-$build"
-zenpack_base_url="http://downloads.sourceforge.net/project/zenoss/zenpacks-4.2/zenpacks-$build"
-zenoss_rpm_file="zenoss-$build.$els.$arch.rpm"
-zenpack_rpm_file="zenoss-core-zenpacks-$build.$els.$arch.rpm"
+zenoss_rpm_file="zenoss_core-$build.$els.$arch.rpm"
 
 # Let's grab Zenoss first...
 
 zenoss_gpg_key="http://dev.zenoss.org/yum/RPM-GPG-KEY-zenoss"
-for url in $zenoss_base_url/$zenoss_rpm_file $zenpack_base_url/$zenpack_rpm_file; do
+for url in $zenoss_base_url/$zenoss_rpm_file; do
 	# This will skip download if RPM exists in temp dir, or if user has pre-downloaded the RPM
 	# and placed it in the same directory as the core-autodeploy script. The RPM install parts
 	# have also been modified to use the pre-downloaded version if available.
@@ -141,26 +139,27 @@ if [ `rpm -qa gpg-pubkey* | grep -c "aa5a1ad7-4829c08a"` -eq 0  ];then
 	try rpm --import $zenoss_gpg_key
 fi
 
-echo "Auto-detecting most recent MySQL Community release"
+#MySQL 5.29 creates dependancy issues, we'll force 5.28 for the remainder of the life of 4.2
 try rm -f .listing
 try wget --no-remove-listing $mysql_ftp_mirror >/dev/null 2>&1
-#if [ -e .listing ]; then
-#	# note: .listing won't be created if you going thru a proxy server(e.g. squid)
-#	mysql_v=`cat .listing | awk '{ print $9 }' | grep MySQL-client | grep $myels.x86_64.rpm | sort | tail -n 1`
-#	# tweaks to isolate MySQL version:
-#	mysql_v="${mysql_v##MySQL-client-}"
-#	mysql_v="${mysql_v%%.$myels.*}"
-#	echo "Auto-detected version $mysql_v"
-#fi
-#MySQL 5.29 creates dependancy issues, we'll force 5.28 for the remainder of the life of 4.2
 mysql_v="5.5.28-1"
-
-
+if [ -e .listing ] && [ -z "$mysql_v" ]; then
+	echo "Auto-detecting most recent MySQL Community release"
+	# note: .listing won't be created if you going thru a proxy server(e.g. squid)
+	mysql_v=`cat .listing | awk '{ print $9 }' | grep MySQL-client | grep $myels.x86_64.rpm | sort | tail -n 1`
+	# tweaks to isolate MySQL version:
+	mysql_v="${mysql_v##MySQL-client-}"
+	mysql_v="${mysql_v%%.$myels.*}"
+	echo "Auto-detected version $mysql_v"
+else
+	echo "Using MySQL Community Release version $mysql_v"
+fi
 jre_file="jre-6u31-linux-x64-rpm.bin"
 jre_url="http://javadl.sun.com/webapps/download/AutoDL?BundleId=59622"
 mysql_client_rpm="MySQL-client-$mysql_v.linux2.6.x86_64.rpm"
 mysql_server_rpm="MySQL-server-$mysql_v.linux2.6.x86_64.rpm"
 mysql_shared_rpm="MySQL-shared-$mysql_v.linux2.6.x86_64.rpm"
+mysql_compat_rpm="MySQL-shared-compat-$mysql_v.linux2.6.x86_64.rpm"
 epel_rpm_url=http://dl.fedoraproject.org/pub/epel/$elv/$arch
 
 echo "Installing EPEL Repo"
@@ -188,8 +187,7 @@ echo "Installing JRE"
 try ./$jre_file
 
 echo "Downloading and installing MySQL RPMs"
-#Only install if MySQL Is not already installed
-for file in $mysql_client_rpm $mysql_server_rpm $mysql_shared_rpm;
+for file in $mysql_client_rpm $mysql_server_rpm $mysql_shared_rpm $mysql_compat_rpm;
 do
 	if [ ! -f $file ];then
 		try wget -N http://wiki.zenoss.org/download/core/mysql/$file
@@ -239,19 +237,16 @@ try chmod 0700 /opt/zenoss/bin/secure_zenoss.sh
 echo "Securing Zenoss"
 try su -l -c /opt/zenoss/bin/secure_zenoss.sh zenoss
 
-echo "Configuring and Starting some Base Services"
+try cp $SCRIPTPATH/zenpack_actions.txt /opt/zenoss/var
+
+echo "Configuring and Starting some Base Services and Zenoss..."
 for service in memcached snmpd zenoss; do
 	try /sbin/chkconfig $service on
 	try /sbin/service $service start
 done
 
-echo "Installing Core ZenPacks - this takes several minutes..."
-if [ -e $zenpack_rpm_file ]; then
-	try yum -y localinstall $zenpack_rpm_file
-else
-	# If already downloaded by user and manually placed next to core-autodeploy.sh, use that RPM instead.
-	try yum -y localinstall $SCRIPTPATH/$zenpack_rpm_file
-fi
+echo "Securing configuration files..."
+try chmod -R go-rwx /opt/zenoss/etc
 
 cat << EOF
 Zenoss Core $build install completed successfully!
