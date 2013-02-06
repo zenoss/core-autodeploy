@@ -192,7 +192,7 @@ echo "Downloading and installing MySQL RPMs"
 for file in $mysql_client_rpm $mysql_server_rpm $mysql_shared_rpm;
 do
 	if [ ! -f $file ];then
-		try wget -N http://cdn.mysql.com/Downloads/MySQL-5.5/$file
+		try wget -N http://wiki.zenoss.org/download/core/mysql/$file
 	fi
 	if [ ! -f $file ];then
 		echo "Failed to download $file. I can't continue"
