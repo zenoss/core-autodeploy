@@ -161,18 +161,18 @@ fi
 #MySQL 5.29 creates dependancy issues, we'll force 5.28 for the remainder of the life of 4.2
 try rm -f .listing
 try wget --no-remove-listing $mysql_ftp_mirror >/dev/null 2>&1
-#mysql_v="5.5.37-1"
-if [ -e .listing ] && [ -z "$mysql_v" ]; then
-	echo "Auto-detecting most recent MySQL Community release"
-	# note: .listing won't be created if you going thru a proxy server(e.g. squid)
-	mysql_v=`cat .listing | awk '{ print $9 }' | grep MySQL-client | grep $myels.x86_64.rpm | sort | tail -n 1`
-	# tweaks to isolate MySQL version:
-	mysql_v="${mysql_v##MySQL-client-}"
-	mysql_v="${mysql_v%%.$myels.*}"
-	echo "Auto-detected version $mysql_v"
-else
-	echo "Using MySQL Community Release version $mysql_v"
-fi
+mysql_v="5.5.37-1"
+#if [ -e .listing ] && [ -z "$mysql_v" ]; then
+#	echo "Auto-detecting most recent MySQL Community release"
+#	# note: .listing won't be created if you going thru a proxy server(e.g. squid)
+#	mysql_v=`cat .listing | awk '{ print $9 }' | grep MySQL-client | grep $myels.x86_64.rpm | sort | tail -n 1`
+#	# tweaks to isolate MySQL version:
+#	mysql_v="${mysql_v##MySQL-client-}"
+#	mysql_v="${mysql_v%%.$myels.*}"
+#	echo "Auto-detected version $mysql_v"
+#else
+echo "Using MySQL Community Release version $mysql_v"
+#fi
 jre_file="jre-6u31-linux-x64-rpm.bin"
 jre_url="http://javadl.sun.com/webapps/download/AutoDL?BundleId=59622"
 mysql_client_rpm="MySQL-client-$mysql_v.linux2.6.x86_64.rpm"
