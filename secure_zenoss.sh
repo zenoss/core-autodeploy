@@ -54,8 +54,8 @@ chmod 0600 $ZENHOME/etc/*.conf*
 
 ### ZEN-4837: Use a randomized secure password everywhere #####################
 
-# Generate a random secure password. Must replace / to make later sed simpler.
-RANDOM_PASSWORD=$(openssl rand -base64 15 | sed 's/\//x/')
+# Generate a random secure password. Limited to A-Z a-z 0-9 for rabbit
+RANDOM_PASSWORD=$(tr -cd '[:alnum:]' < /dev/urandom | fold -w15 | head -n1)
 
 # Ensure that global.conf exists. Otherwise zenglobalconf fails.
 if [ ! -f $ZENHOME/etc/global.conf ]
