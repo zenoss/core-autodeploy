@@ -132,7 +132,7 @@ fi
 # Defaults for user provided input
 arch="x86_64"
 # ftp mirror for MySQL to use for version auto-detection:
-mysql_ftp_mirror="ftp://mirror.anl.gov/pub/mysql/Downloads/MySQL-5.5/"
+mysql_ftp_mirror="http://www.mirrorservice.org/sites/ftp.mysql.com/Downloads/MySQL-5.5/"
 
 # Auto-detect latest build:
 build=4.2.5-2108
