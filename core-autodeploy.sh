@@ -235,7 +235,7 @@ enable_service mysql
 
 echo "Enabling rpmforge repo..."
 try wget http://apt.sw.be/redhat/$els/en/$arch/rpmforge/RPMS/rpmforge-release-0.5.3-1.$els.rf.$arch.rpm
-try yum --nogpgcheck -y localinstall rpmforge-release-0.5.2-2.$els.rf.$arch.rpm
+try yum --nogpgcheck -y localinstall rpmforge-release-0.5.3-1.$els.rf.$arch.rpm
 disable_repo rpmforge
 	
 echo "Installing rrdtool"
