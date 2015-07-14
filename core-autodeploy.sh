@@ -137,7 +137,7 @@ mysql_ftp_mirror="http://www.mirrorservice.org/sites/ftp.mysql.com/Downloads/MyS
 # Auto-detect latest build:
 build=4.2.5-2108
 rmqv=2.8.7
-zenoss_base_url="http://downloads.sourceforge.net/project/zenoss/zenoss-4.2/zenoss-4.2.5"
+zenoss_base_url="http://downloads.sourceforge.net/project/zenoss/files/zenoss-4.2/zenoss-4.2.5"
 zenoss_rpm_file="zenoss_core-$build.$els.$arch.rpm"
 
 # Let's grab Zenoss first...
@@ -234,7 +234,7 @@ enable_service mysql
 # set up rrdtool, etc.
 
 echo "Enabling rpmforge repo..."
-try wget http://apt.sw.be/redhat/$els/en/$arch/rpmforge/RPMS/rpmforge-release-0.5.2-2.$els.rf.$arch.rpm
+try wget http://apt.sw.be/redhat/$els/en/$arch/rpmforge/RPMS/rpmforge-release-0.5.3-1.$els.rf.$arch.rpm
 try yum --nogpgcheck -y localinstall rpmforge-release-0.5.2-2.$els.rf.$arch.rpm
 disable_repo rpmforge
 	
