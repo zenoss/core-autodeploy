@@ -142,7 +142,7 @@ zenoss_rpm_file="zenoss_core-$build.$els.$arch.rpm"
 
 # Let's grab Zenoss first...
 
-zenoss_gpg_key="http://dev.zenoss.org/yum/RPM-GPG-KEY-zenoss"
+zenoss_gpg_key="http://wiki.zenoss.org/download/core/gpg/RPM-GPG-KEY-zenoss"
 for url in $zenoss_base_url/$zenoss_rpm_file; do
 	# This will skip download if RPM exists in temp dir, or if user has pre-downloaded the RPM
 	# and placed it in the same directory as the core-autodeploy script. The RPM install parts
